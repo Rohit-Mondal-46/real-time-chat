@@ -31,6 +31,9 @@ function originIsAllowed(origin: string) {
   return true;
 }
 
+
+
+
 wsServer.on('request', function(request:any) {
     console.log("inside request");
     
@@ -44,72 +47,90 @@ wsServer.on('request', function(request:any) {
     var connection = request.accept("echo-protocol", request.origin);
     console.log((new Date()) + ' Connection accepted.');
     connection.on('message', function(message:any) {
+        console.log('Received message:', message);
         if (message.type === 'utf8') {
             try {
-                messageHandler(connection,JSON.parse(message.utf8Data))
+                const parsedData = JSON.parse(message.utf8Data)
+                console.log("Received message parsed: ", parsedData);
+                if (parsedData.type === 'PING') {
+                    connection.sendUTF(JSON.stringify({ type: 'PONG' }));
+                  }
+                messageHandler(connection,parsedData)
             } catch (error) {
                 console.error(error)
             }
         }
-        
     });
     connection.on('close', function(reasonCode:any, description:any) {
-        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+        console.log(' Peer ' + connection.remoteAddress + ' disconnected. ' + "reason: " + reasonCode + " des: " + description);
     });
 });
 
 function messageHandler(ws: connection,message: Imsg){
-    if(message.type === IncomingSupportedMessage.JoinRoom){
-        const payload = message.payload;
-        userManager.addUser(payload.name,payload.userId,payload.roomId,ws);
-    }
-    
-    if(message.type === IncomingSupportedMessage.SendMessage){
-        const payload = message.payload;
-        const user = userManager.getUser(payload.roomId,payload.userId);
-
-        if(!user){
-            console.error('user not found')
-            return;
-        }
-
-        let chat = store.addChats(payload.userId,user.name,payload.roomId,payload.message);
-        if(!chat){
-            return;
-        }
-
-        const outGoingPayload: Omsg = {
-            type: OutgoingSupportedMessage.AddChat,
-            payload: {
-                chatId: chat.id,
-                roomId: payload.roomId,
-                message: payload.message,
-                name: user.name,
-                upvote: 0 
-            }
+    try {
+        if(message.type === IncomingSupportedMessage.JoinRoom){
+            // console.log("under join room fn: ");
+            const payload = message.payload;
+            userManager.addUser(payload.name,payload.userId,payload.roomId,ws);
         }
         
-        userManager.broadCast(payload.roomId,payload.userId,outGoingPayload);
-    }
-
-    if(message.type === IncomingSupportedMessage.UpvoteMessage){
-        const payload = message.payload;
-
-        let chat = store.upvote(payload.userId,payload.roomId,payload.chatId);
-
-        if(!chat){
-            return;
-        }
-        const outGoingPayload: Omsg = {
-            type: OutgoingSupportedMessage.UpdateChat,
-            payload: {
-                chatId: chat.id,
-                roomId: payload.roomId,
-                upvote: chat.upvotes.length
+        else if(message.type === IncomingSupportedMessage.SendMessage){
+            // console.log('under send-messsage fn:', message, '\n');
+            const payload = message.payload;
+            const user = userManager.getUser(payload.roomId,payload.userId);
+    
+            if(!user){
+                // console.error('user not found')
+                return;
             }
+            //TODO: chat is added but all chat is not rendering.......
+            let chat = store.addChats(payload.userId,user.name,payload.roomId,payload.message);
+            // console.log(chat);
+            if(!chat){
+                // console.log("chat not found");
+                return;
+            }
+    
+            const outGoingPayload: Omsg = {
+                type: OutgoingSupportedMessage.AddChat,
+                payload: {
+                    chatId: chat.id,
+                    roomId: payload.roomId,
+                    message: payload.message,
+                    name: user.name,
+                    upvote: 0 
+                }
+            }
+            
+            userManager.broadCast(payload.roomId,payload.userId,outGoingPayload);
         }
-
-        userManager.broadCast(payload.roomId,payload.userId,outGoingPayload);
+    
+        else if(message.type === IncomingSupportedMessage.UpvoteMessage){
+            console.log('Received message at upvote:', message);
+    
+            const payload = message.payload;
+    
+            let chat = store.upvote(payload.userId,payload.roomId,payload.chatId);
+            console.log("upvotes: ", chat?.upvotes);
+            
+            if(!chat){
+                console.log("chat not found at upvote");
+                return;
+            }
+            const outGoingPayload: Omsg = {
+                type: OutgoingSupportedMessage.UpdateChat,
+                payload: {
+                    chatId: chat.id,
+                    roomId: payload.roomId,
+                    upvote: chat.upvotes.length
+                }
+            }
+    
+            userManager.broadCast(payload.roomId,payload.userId,outGoingPayload);
+        }
+    } catch (error) {
+        console.log(error);
+        
     }
 }
 

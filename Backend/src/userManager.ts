@@ -30,6 +30,8 @@ export class UserManager{
             name,
             conn: socket,
         }) 
+        console.log("user Added!!!");
+        
     }
 
     removeUser(rooId: string, userId: string){
@@ -45,6 +47,8 @@ export class UserManager{
     }
 
     broadCast(roomId: string, userId: string, message: OutGoingMessage){
+        console.log("under broadcast");
+        
         const user = this.getUser(roomId,userId)
         if(!user){
             console.error("user not found");
@@ -57,10 +61,8 @@ export class UserManager{
             return;
         }
 
-        room.users.forEach((({conn,id})=>{
-            if(id === userId){
-                return;
-            }
+        // const receivers = room.users.filter((user)=> user.id !== userId)
+        room.users.forEach((({conn})=>{
             console.log("Outgoing message: " + JSON.stringify(message));
             conn.sendUTF(JSON.stringify(message));
         }))

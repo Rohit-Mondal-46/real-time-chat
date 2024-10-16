@@ -28,9 +28,11 @@ export class ImMemoryStore implements Store {
     }
 
     addChats(userId:string, name: string, roomId: string, message:string){
-        const room = this.store.get(roomId);
+        
+        let room = this.store.get(roomId);
         if(!room){
-            return;
+            this.initRoom(roomId);
+            room = this.store.get(roomId);
         }
         const chat = {
             userId,
@@ -39,8 +41,13 @@ export class ImMemoryStore implements Store {
             upvotes:[],
             id: (globalChatId++).toString()
         }
-        room.chats.push(chat)
-        return chat;
+        if(room){
+            room.chats.push(chat)
+            console.log("chat added to array: ", chat);
+            console.log(`all chats: (${room.chats.length})`, room.chats);
+            return chat;
+        }
+        return null
     }
 
     upvote(userId:string,roomId: string, chatId: string){
@@ -53,7 +60,9 @@ export class ImMemoryStore implements Store {
             if(chat.upvotes.find((x => x === userId))){
                 return chat;
             }
-            chat.upvotes.push(userId)
+            chat.upvotes.push(userId);
+            console.log("added to upvote");
+            
         }
         return chat;
     }

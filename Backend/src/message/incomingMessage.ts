@@ -3,7 +3,7 @@ import z from 'zod'
 export enum IncomingSupportedMessage {
     JoinRoom = "JOIN_ROOM",
     SendMessage = "SEND_MESSAGE",
-    UpvoteMessage = "Upvote_Message" 
+    UpvoteMessage = "UPVOTE_MESSAGE" 
 }
 
 export type ImcomingMessage = {

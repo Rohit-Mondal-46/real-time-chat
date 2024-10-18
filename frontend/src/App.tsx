@@ -14,7 +14,6 @@ const userId = Math.floor(Math.random() * 10000);
 function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const [input,setInput] = useState('')
   function sendMessage(message:string){
     socket?.send(JSON.stringify({
       type: "SEND_MESSAGE",
@@ -43,7 +42,7 @@ function App() {
   
       ws.onopen = function () {
         console.log("WebSocket Connected");
-  
+   
         ws.send(
           JSON.stringify({
             type: "JOIN_ROOM",

@@ -98,7 +98,8 @@ function messageHandler(ws: connection,message: Imsg){
                     roomId: payload.roomId,
                     message: payload.message,
                     name: user.name,
-                    upvote: 0 
+                    upvote: 0,
+                    userId:payload.userId 
                 }
             }
             
